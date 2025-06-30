@@ -4,5 +4,3 @@
 
 [build.environment]
   NODE_VERSION = "16"
-
-# No need for MongoDB configuration anymore

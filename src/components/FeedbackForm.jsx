@@ -124,6 +124,20 @@ const FeedbackForm = () => {
     setCurrentStep((prev) => prev - 1);
   };
 
+  const encode = (data) => {
+    const formData = new URLSearchParams();
+    Object.keys(data).forEach(key => {
+      if (typeof data[key] === 'object') {
+        Object.keys(data[key]).forEach(subKey => {
+          formData.append(`${key}.${subKey}`, data[key][subKey]);
+        });
+      } else {
+        formData.append(key, data[key]);
+      }
+    });
+    return formData.toString();
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateStep(currentStep)) return;
@@ -131,38 +145,24 @@ const FeedbackForm = () => {
     setIsSubmitting(true);
     
     try {
-      const formDataToSend = new FormData();
-      
-      // Add all form data to FormData object
-      Object.entries(formData).forEach(([key, value]) => {
-        if (key === 'brandStatements') {
-          // Handle brand statements separately
-          Object.entries(value).forEach(([statementKey, statementValue]) => {
-            formDataToSend.append(`brandStatements.${statementKey}`, statementValue);
-          });
-        } else {
-          formDataToSend.append(key, value);
-        }
+      const formPayload = encode({
+        ...formData,
+        'form-name': 'feedback'
       });
-      
-      // Add the form-name required by Netlify
-      formDataToSend.append('form-name', 'feedback');
 
       const response = await fetch('/', {
         method: 'POST',
-        body: formDataToSend,
-        headers: {
-          'Accept': 'application/json'
-        }
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: formPayload
       });
 
-      if (!response.ok) throw new Error('Submission failed');
-
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      
       setShowConfetti(true);
       setTimeout(() => navigate('/thank-you'), 2000);
     } catch (error) {
       console.error('Submission error:', error);
-      toast.error('Failed to submit feedback. Please try again.');
+      toast.error('Failed to submit. Please try again later.');
     } finally {
       setIsSubmitting(false);
     }
@@ -255,6 +255,9 @@ const FeedbackForm = () => {
         netlify-honeypot="bot-field"
       >
         <input type="hidden" name="form-name" value="feedback" />
+        <div hidden>
+          <input name="bot-field" onChange={handleChange} />
+        </div>
         {renderStep()}
       </form>
 
