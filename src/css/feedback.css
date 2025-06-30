@@ -379,3 +379,76 @@ button:focus {
   flex: 1;
   min-width: 0;
 }
+/* Admin Panel Styles */
+.admin-container {
+  max-width: 1000px;
+  margin: 40px auto;
+  padding: 30px;
+  background-color: #ffffff;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  border-radius: 16px;
+}
+
+.feedback-list {
+  margin-top: 30px;
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+th, td {
+  padding: 12px 15px;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+th {
+  background-color: #f3f4f6;
+  font-weight: 600;
+}
+
+tr:hover {
+  background-color: #f9fafb;
+}
+
+.view-button {
+  background-color: #3b82f6;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+}
+
+.view-button:hover {
+  background-color: #2563eb;
+}
+
+.back-button {
+  margin-bottom: 20px;
+}
+
+/* Login Form Styles */
+.admin-container form {
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.admin-container input[type="password"] {
+  width: 100%;
+  padding: 10px;
+  margin: 10px 0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+/* Error Message */
+.error {
+  color: #dc2626;
+  margin: 10px 0;
+}

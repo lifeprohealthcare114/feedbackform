@@ -1,0 +1,18 @@
+[build]
+  command = "npm run build"
+  functions = "netlify/functions"
+  publish = "build"
+
+[build.environment]
+  NODE_VERSION = "16"
+
+[context.production.environment]
+  MONGODB_URI = "mongodb+srv://feedback-admin:<db_password>@cluster0.66ekdma.mongodb.net/feedback_db?retryWrites=true&w=majority&appName=Cluster0"
+  ADMIN_PASSWORD = "LifeproHealthcare114"
+
+[[headers]]
+  for = "/admin"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    Content-Security-Policy = "default-src 'self'"

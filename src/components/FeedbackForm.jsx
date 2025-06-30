@@ -48,6 +48,7 @@ const FeedbackForm = () => {
 
   const [errors, setErrors] = useState({});
   const [showConfetti, setShowConfetti] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const totalSteps = 6;
 
   const validateStep = (step) => {
@@ -123,24 +124,56 @@ const FeedbackForm = () => {
     setCurrentStep((prev) => prev - 1);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (validateStep(currentStep)) {
-      try {
-        const storedFeedbacks = JSON.parse(localStorage.getItem('lifepro-feedbacks')) || [];
-        storedFeedbacks.push(formData);
-        localStorage.setItem('lifepro-feedbacks', JSON.stringify(storedFeedbacks));
+    if (!validateStep(currentStep)) return;
 
+    setIsSubmitting(true);
+    
+    try {
+      const submissionData = {
+        ...formData,
+        createdAt: new Date().toISOString()
+      };
+
+      // Try to submit to Netlify function first
+      const response = await fetch('/.netlify/functions/submitFeedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(submissionData),
+      });
+
+      if (!response.ok) throw new Error('Server submission failed');
+
+      // Store locally as fallback
+      const stored = JSON.parse(localStorage.getItem('feedbackSubmissions') || '[]');
+      stored.push(submissionData);
+      localStorage.setItem('feedbackSubmissions', JSON.stringify(stored));
+
+      setShowConfetti(true);
+      setTimeout(() => navigate('/thank-you'), 2000);
+    } catch (error) {
+      console.error('Submission error:', error);
+      
+      // Fallback to local storage only
+      try {
+        const stored = JSON.parse(localStorage.getItem('feedbackSubmissions') || '[]');
+        stored.push({
+          ...formData,
+          createdAt: new Date().toISOString(),
+          localFallback: true
+        });
+        localStorage.setItem('feedbackSubmissions', JSON.stringify(stored));
+        
         toast.success('Feedback saved locally!');
         setShowConfetti(true);
-        setTimeout(() => {
-          setShowConfetti(false);
-          navigate('/thank-you');
-        }, 500);
-      } catch (err) {
-        console.error('Error storing feedback locally:', err);
-        toast.error('Failed to save feedback. Try again.');
+        setTimeout(() => navigate('/thank-you'), 2000);
+      } catch (localError) {
+        console.error('Local storage error:', localError);
+        toast.error('Failed to save feedback. Please try again.');
       }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -149,15 +182,59 @@ const FeedbackForm = () => {
       case 0:
         return <StepWelcome onNext={handleNext} />;
       case 1:
-        return <StepAboutYou formData={formData} handleChange={handleChange} errors={errors} onNext={handleNext} onBack={handleBack} />;
+        return (
+          <StepAboutYou 
+            formData={formData} 
+            handleChange={handleChange} 
+            errors={errors} 
+            onNext={handleNext} 
+            onBack={handleBack} 
+          />
+        );
       case 2:
-        return <StepProductFeedback formData={formData} handleChange={handleChange} handleRatingChange={handleRatingChange} errors={errors} onNext={handleNext} onBack={handleBack} />;
+        return (
+          <StepProductFeedback 
+            formData={formData} 
+            handleChange={handleChange} 
+            handleRatingChange={handleRatingChange} 
+            errors={errors} 
+            onNext={handleNext} 
+            onBack={handleBack} 
+          />
+        );
       case 3:
-        return <StepCompanyFeedback formData={formData} handleChange={handleChange} handleRatingChange={handleRatingChange} errors={errors} onNext={handleNext} onBack={handleBack} />;
+        return (
+          <StepCompanyFeedback 
+            formData={formData} 
+            handleChange={handleChange} 
+            handleRatingChange={handleRatingChange} 
+            errors={errors} 
+            onNext={handleNext} 
+            onBack={handleBack} 
+          />
+        );
       case 4:
-        return <StepServiceWebsite formData={formData} handleChange={handleChange} handleRatingChange={handleRatingChange} errors={errors} onNext={handleNext} onBack={handleBack} />;
+        return (
+          <StepServiceWebsite 
+            formData={formData} 
+            handleChange={handleChange} 
+            handleRatingChange={handleRatingChange} 
+            errors={errors} 
+            onNext={handleNext} 
+            onBack={handleBack} 
+          />
+        );
       case 5:
-        return <StepAdditionalFeedback formData={formData} handleChange={handleChange} errors={errors} onSubmit={handleSubmit} onBack={handleBack} />;
+        return (
+          <StepAdditionalFeedback 
+            formData={formData} 
+            handleChange={handleChange} 
+            errors={errors} 
+            onSubmit={handleSubmit} 
+            onBack={handleBack} 
+            isSubmitting={isSubmitting}
+          />
+        );
       default:
         return <StepWelcome onNext={handleNext} />;
     }
@@ -183,7 +260,17 @@ const FeedbackForm = () => {
         {renderStep()}
       </form>
 
-      <ToastContainer position="top-center" autoClose={3000} />
+      <ToastContainer 
+        position="top-center"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
     </div>
   );
 };
