@@ -131,47 +131,38 @@ const FeedbackForm = () => {
     setIsSubmitting(true);
     
     try {
-      const submissionData = {
-        ...formData,
-        createdAt: new Date().toISOString()
-      };
+      const formDataToSend = new FormData();
+      
+      // Add all form data to FormData object
+      Object.entries(formData).forEach(([key, value]) => {
+        if (key === 'brandStatements') {
+          // Handle brand statements separately
+          Object.entries(value).forEach(([statementKey, statementValue]) => {
+            formDataToSend.append(`brandStatements.${statementKey}`, statementValue);
+          });
+        } else {
+          formDataToSend.append(key, value);
+        }
+      });
+      
+      // Add the form-name required by Netlify
+      formDataToSend.append('form-name', 'feedback');
 
-      // Try to submit to Netlify function first
-      const response = await fetch('/.netlify/functions/submitFeedback', {
+      const response = await fetch('/', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(submissionData),
+        body: formDataToSend,
+        headers: {
+          'Accept': 'application/json'
+        }
       });
 
-      if (!response.ok) throw new Error('Server submission failed');
-
-      // Store locally as fallback
-      const stored = JSON.parse(localStorage.getItem('feedbackSubmissions') || '[]');
-      stored.push(submissionData);
-      localStorage.setItem('feedbackSubmissions', JSON.stringify(stored));
+      if (!response.ok) throw new Error('Submission failed');
 
       setShowConfetti(true);
       setTimeout(() => navigate('/thank-you'), 2000);
     } catch (error) {
       console.error('Submission error:', error);
-      
-      // Fallback to local storage only
-      try {
-        const stored = JSON.parse(localStorage.getItem('feedbackSubmissions') || '[]');
-        stored.push({
-          ...formData,
-          createdAt: new Date().toISOString(),
-          localFallback: true
-        });
-        localStorage.setItem('feedbackSubmissions', JSON.stringify(stored));
-        
-        toast.success('Feedback saved locally!');
-        setShowConfetti(true);
-        setTimeout(() => navigate('/thank-you'), 2000);
-      } catch (localError) {
-        console.error('Local storage error:', localError);
-        toast.error('Failed to save feedback. Please try again.');
-      }
+      toast.error('Failed to submit feedback. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -256,7 +247,14 @@ const FeedbackForm = () => {
         </div>
       )}
 
-      <form onSubmit={(e) => e.preventDefault()} noValidate>
+      <form 
+        name="feedback"
+        method="POST"
+        data-netlify="true"
+        onSubmit={handleSubmit}
+        netlify-honeypot="bot-field"
+      >
+        <input type="hidden" name="form-name" value="feedback" />
         {renderStep()}
       </form>
 

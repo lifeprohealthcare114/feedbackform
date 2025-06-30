@@ -1,5 +1,6 @@
+import React from 'react';
 
-const FinalStep = ({ formData, handleChange, errors, onSubmit, onBack }) => {
+const FinalStep = ({ formData, handleChange, errors, onSubmit, onBack, isSubmitting }) => {
   return (
     <div className="form-step slide-in">
       <fieldset>
@@ -61,7 +62,9 @@ const FinalStep = ({ formData, handleChange, errors, onSubmit, onBack }) => {
       </fieldset>
       <div className="form-navigation">
         <button type="button" onClick={onBack} className="back-button">Back</button>
-        <button type="submit" onClick={onSubmit}>Submit Feedback</button>
+        <button type="submit" onClick={onSubmit} disabled={isSubmitting}>
+          {isSubmitting ? 'Submitting...' : 'Submit Feedback'}
+        </button>
       </div>
     </div>
   );

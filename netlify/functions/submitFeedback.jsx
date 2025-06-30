@@ -27,6 +27,7 @@ exports.handler = async (event) => {
       }),
     };
   } catch (error) {
+    console.error('MongoDB Error:', error);
     return {
       statusCode: 500,
       body: JSON.stringify({ 
