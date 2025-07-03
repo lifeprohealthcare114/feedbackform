@@ -52,7 +52,7 @@ const AboutYouStep = ({ formData, handleChange, errors, onNext, onBack }) => {
           <PhoneInput
             id="phone"
             international
-            defaultCountry="US"
+            defaultCountry="IN"
             value={formData.phone}
             onChange={handlePhoneChange}
             placeholder="Enter phone number"
