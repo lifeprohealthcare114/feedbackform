@@ -17,6 +17,11 @@
 .stars {
   display: flex;
   gap: 6px;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  touch-action: none; /* Changed to 'none' for better touch control */
 }
 
 .star {
@@ -26,28 +31,33 @@
   transition: all 0.2s ease-in-out;
   position: relative;
   line-height: 1;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
 }
 
 .star.selected {
   color: #f59e0b;
 }
 
-.star:hover {
-  transform: scale(1.1);
-  color: #fbbf24;
-}
+/* Desktop hover effects */
+@media (hover: hover) {
+  .star:hover {
+    transform: scale(1.1);
+    color: #fbbf24;
+  }
 
-.stars:hover .star {
-  color: #e5e7eb;
-}
+  .stars:not(.touch-active):hover .star {
+    color: #e5e7eb;
+  }
 
-.stars:hover .star:hover,
-.stars:hover .star:hover ~ .star {
-  color: #fbbf24;
-}
+  .stars:not(.touch-active):hover .star:hover,
+  .stars:not(.touch-active):hover .star:hover ~ .star {
+    color: #fbbf24;
+  }
 
-.stars .star.selected ~ .star:hover {
-  color: #fbbf24;
+  .stars .star.selected ~ .star:hover {
+    color: #fbbf24;
+  }
 }
 
 .error-message {
@@ -62,4 +72,15 @@
   outline: none;
   box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.5);
   border-radius: 2px;
+}
+
+/* Mobile-specific adjustments */
+@media (max-width: 768px) {
+  .stars {
+    gap: 8px;
+  }
+
+  .star {
+    font-size: 36px;
+  }
 }
