@@ -15,38 +15,38 @@
 
     <!-- This is where the React app renders -->
     <div id="root"></div>
+<div style="display: none;">
+  <form name="feedback" netlify netlify-honeypot="bot-field">
+    <input type="hidden" name="form-name" value="feedback" />
+    <input type="text" name="name" />
+    <input type="email" name="email" />
+    <input type="tel" name="phone" />
+    <input type="text" name="companyName" />
+    <input type="text" name="customerStatus" />
+    <input type="text" name="customerDuration" />
+    <input type="number" name="npsScore" />
+    <input type="text" name="companyOverallSatisfaction" />
+    <input type="checkbox" name="brandStatements.innovative" />
+    <input type="checkbox" name="brandStatements.reliable" />
+    <input type="checkbox" name="brandStatements.customerCentric" />
+    <input type="checkbox" name="brandStatements.trustworthy" />
+    <input type="text" name="howHeard" />
+    <input type="text" name="productInterest" />
+    <input type="number" name="productSatisfaction" />
+    <textarea name="favoriteFeatures"></textarea>
+    <input type="radio" name="productRecommendation" value="Yes" />
+    <input type="radio" name="productRecommendation" value="No" />
+    <input type="radio" name="productRecommendation" value="Maybe" />
+    <input type="radio" name="customerServiceUsed" value="Yes" />
+    <input type="radio" name="customerServiceUsed" value="No" />
+    <input type="number" name="customerServiceRating" />
+    <input type="number" name="websiteEaseOfUse" />
+    <textarea name="websiteImprovements"></textarea>
+    <textarea name="generalComments"></textarea>
+    <input type="radio" name="contactForFollowUp" value="Yes" />
+    <input type="radio" name="contactForFollowUp" value="No" />
+    <input type="email" name="followUpEmail" />
+  </form>
+</div>
 
-    <!-- Netlify Hidden Form for backend submissions -->
-    <form name="feedback" netlify netlify-honeypot="bot-field" hidden>
-      <input type="hidden" name="form-name" value="feedback" />
-      <input type="text" name="name" />
-      <input type="email" name="email" />
-      <input type="tel" name="phone" />
-      <input type="text" name="companyName" />
-      <input type="text" name="customerStatus" />
-      <input type="text" name="customerDuration" />
-      <input type="number" name="npsScore" />
-      <input type="text" name="companyOverallSatisfaction" />
-      <input type="checkbox" name="brandStatements.innovative" />
-      <input type="checkbox" name="brandStatements.reliable" />
-      <input type="checkbox" name="brandStatements.customerCentric" />
-      <input type="checkbox" name="brandStatements.trustworthy" />
-      <input type="text" name="howHeard" />
-      <input type="text" name="productInterest" />
-      <input type="number" name="productSatisfaction" />
-      <textarea name="favoriteFeatures"></textarea>
-      <input type="radio" name="productRecommendation" value="Yes" />
-      <input type="radio" name="productRecommendation" value="No" />
-      <input type="radio" name="productRecommendation" value="Maybe" />
-      <input type="radio" name="customerServiceUsed" value="Yes" />
-      <input type="radio" name="customerServiceUsed" value="No" />
-      <input type="number" name="customerServiceRating" />
-      <input type="number" name="websiteEaseOfUse" />
-      <textarea name="websiteImprovements"></textarea>
-      <textarea name="generalComments"></textarea>
-      <input type="radio" name="contactForFollowUp" value="Yes" />
-      <input type="radio" name="contactForFollowUp" value="No" />
-      <input type="email" name="followUpEmail" />
-    </form>
-  </body>
 </html>
