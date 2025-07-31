@@ -16,78 +16,88 @@ exports.handler = async (event) => {
   const pdfFileName = `${userName}_${dateStr}_feedback.pdf`;
   const excelFileName = `${userName}_${dateStr}_feedback.xlsx`;
 
-  // Generate PDF
-  const doc = new PDFDocument();
-  let pdfBuffers = [];
-  doc.on('data', pdfBuffers.push.bind(pdfBuffers));
+  try {
+    // Generate PDF buffer
+    const pdfBuffer = await new Promise((resolve, reject) => {
+      const doc = new PDFDocument();
+      const buffers = [];
 
-  doc.fontSize(16).text('LifePro Feedback Summary', { align: 'center' });
-  doc.moveDown();
+      doc.on('data', buffers.push.bind(buffers));
+      doc.on('end', () => {
+        resolve(Buffer.concat(buffers));
+      });
+      doc.on('error', reject);
 
-  Object.entries(formData).forEach(([key, value]) => {
-    const val = typeof value === 'object' ? JSON.stringify(value) : value;
-    doc.fontSize(12).text(`${key}: ${val}`);
-    doc.moveDown(0.5);
-  });
-  doc.end();
+      doc.fontSize(16).text('LifePro Feedback Summary', { align: 'center' });
+      doc.moveDown();
 
-  // Generate Excel
-  const workbook = new ExcelJS.Workbook();
-  const sheet = workbook.addWorksheet('Feedback');
-  sheet.columns = [
-    { header: 'Field', key: 'field' },
-    { header: 'Value', key: 'value' },
-  ];
-  Object.entries(formData).forEach(([key, value]) => {
-    const val = typeof value === 'object' ? JSON.stringify(value) : value;
-    sheet.addRow({ field: key, value: val });
-  });
-  const excelBuffer = await workbook.xlsx.writeBuffer();
-
-  return new Promise((resolve) => {
-    doc.on('end', async () => {
-      const pdfBuffer = Buffer.concat(pdfBuffers);
-
-      let transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASS
-        }
+      Object.entries(formData).forEach(([key, value]) => {
+        const val = typeof value === 'object' ? JSON.stringify(value) : value;
+        doc.fontSize(12).text(`${key}: ${val}`);
+        doc.moveDown(0.5);
       });
 
-      try {
-        // Send email to user from admin
-        await transporter.sendMail({
-          from: `LifePro Admin <${adminEmail}>`,
-          to: userEmail,
-          subject: 'Thank You for Your Feedback',
-          html: `<p>Dear ${formData.name},</p><p>Thank you for your valuable feedback!</p><p>Regards,<br/>LifePro Team</p>`
-        });
+      doc.end();
+    });
 
-        // Send email to admin from user
-        await transporter.sendMail({
-          from: `${formData.name} <${userEmail}>`,
-          to: adminEmail,
-          subject: 'New Feedback Submission Received',
-          text: 'A new feedback form was submitted by a user.',
-          attachments: [
-            {
-              filename: pdfFileName,
-              content: pdfBuffer
-            },
-            {
-              filename: excelFileName,
-              content: excelBuffer
-            }
-          ]
-        });
+    // Generate Excel buffer
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('Feedback');
+    sheet.columns = [
+      { header: 'Field', key: 'field' },
+      { header: 'Value', key: 'value' },
+    ];
+    Object.entries(formData).forEach(([key, value]) => {
+      const val = typeof value === 'object' ? JSON.stringify(value) : value;
+      sheet.addRow({ field: key, value: val });
+    });
+    const excelBuffer = await workbook.xlsx.writeBuffer();
 
-        resolve({ statusCode: 200, body: 'Emails sent successfully.' });
-      } catch (err) {
-        console.error('Email error:', err);
-        resolve({ statusCode: 500, body: 'Email sending failed.' });
+    // Setup transporter
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
       }
     });
-  });
+
+    // Send Thank You email to user
+    await transporter.sendMail({
+      from: `LifePro Admin <${adminEmail}>`,
+      to: userEmail,
+      subject: 'Thank You for Your Feedback',
+      html: `<p>Dear ${formData.name},</p><p>Thank you for your valuable feedback!</p><p>Regards,<br/>Lifepro Healthcare Team</p>`
+    });
+
+    // Send feedback PDF and Excel to admin
+    await transporter.sendMail({
+      from: `${formData.name} <${userEmail}>`,
+      to: adminEmail,
+      subject: 'New Feedback Submission Received',
+      text: 'A new feedback form was submitted by a user.',
+      attachments: [
+        {
+          filename: pdfFileName,
+          content: pdfBuffer
+        },
+        {
+          filename: excelFileName,
+          content: excelBuffer
+        }
+      ]
+    });
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ message: 'Emails sent successfully.' })
+    };
+
+  } catch (err) {
+    console.error('Error sending emails:', err);
+    return {
+      statusCode: 500,
+      body: 'Email sending failed.'
+    };
+  }
 };
