@@ -4,7 +4,7 @@ const ExcelJS = require('exceljs');
 const fs = require('fs');
 const path = require('path');
 
-// Format keys into nice readable field names
+// Format keys into readable field names
 function formatKey(key) {
   return key
     .replace(/([A-Z])/g, ' $1')
@@ -26,7 +26,7 @@ exports.handler = async (event) => {
   const excelFileName = `${userName}_${dateStr}_feedback.xlsx`;
 
   try {
-    // === PDF Creation ===
+    // === PDF Generation ===
     const pdfBuffer = await new Promise((resolve, reject) => {
       const doc = new PDFDocument({ margin: 50 });
       const buffers = [];
@@ -35,39 +35,61 @@ exports.handler = async (event) => {
       doc.on('end', () => resolve(Buffer.concat(buffers)));
       doc.on('error', reject);
 
-      // Header
-      doc.rect(0, 0, doc.page.width, 70).fill('#f1c40f');
-      doc.fillColor('#000').fontSize(20).text('LifePro Feedback Summary', 70, 25);
+      // Header background
+      doc.rect(0, 0, doc.page.width, 60).fill('#f1c40f');
+      doc.fillColor('#000').fontSize(20).font('Helvetica-Bold').text('LifePro Feedback Summary', 70, 20);
 
-      // Logo
+      // Logo (optional)
       const logoPath = path.resolve(__dirname, 'logo.png');
       if (fs.existsSync(logoPath)) {
         doc.image(logoPath, 20, 15, { width: 40 });
       }
 
-      doc.moveDown(2);
-      doc.fillColor('#000').fontSize(12);
+      doc.moveDown(3);
+      doc.fontSize(12).fillColor('#000');
 
-      // Feedback table-style layout
-      Object.entries(formData).forEach(([key, value]) => {
-        const label = formatKey(key);
-        const val = typeof value === 'object' ? JSON.stringify(value) : value;
+      const section = (title) => {
+        doc.moveDown(1).fontSize(13).fillColor('#333').font('Helvetica-Bold').text(title, { underline: true }).moveDown(0.5);
+      };
 
+      const printField = (label, value) => {
+        const val = typeof value === 'object' ? JSON.stringify(value, null, 2) : (value || 'N/A');
         doc
-          .fillColor('#333')
-          .font('Helvetica-Bold')
-          .text(`${label}: `, { continued: true })
-          .font('Helvetica')
-          .fillColor('#000')
-          .text(`${val}`);
+          .font('Helvetica-Bold').fillColor('#111').text(`${label}: `, { continued: true })
+          .font('Helvetica').fillColor('#000').text(val)
+          .moveDown(0.3);
+      };
 
-        doc.moveDown(0.5);
-      });
+      // Sections
+      section('Contact Information');
+      ['name', 'email', 'phone', 'companyName', 'customerStatus', 'customerDuration', 'howHeard']
+        .forEach(k => printField(formatKey(k), formData[k]));
+
+      section('Product Feedback');
+      ['productInterest', 'productSatisfaction', 'favoriteFeatures', 'productRecommendation', 'npsScore', 'companyOverallSatisfaction']
+        .forEach(k => printField(formatKey(k), formData[k]));
+
+      section('Brand Perception');
+      const brand = formData.brandStatements || {};
+      ['innovative', 'reliable', 'customerCentric', 'trustworthy']
+        .forEach(k => printField(formatKey(k), brand[k] ? 'Yes' : 'No'));
+
+      section('Customer Service');
+      ['customerServiceUsed', 'customerServiceRating']
+        .forEach(k => printField(formatKey(k), formData[k]));
+
+      section('Website Feedback');
+      ['websiteEaseOfUse', 'websiteImprovements']
+        .forEach(k => printField(formatKey(k), formData[k]));
+
+      section('Final Comments');
+      ['generalComments', 'contactForFollowUp', 'followUpEmail']
+        .forEach(k => printField(formatKey(k), formData[k]));
 
       doc.end();
     });
 
-    // === Excel Creation ===
+    // === Excel Generation ===
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet('Feedback');
 
@@ -82,9 +104,7 @@ exports.handler = async (event) => {
       sheet.addRow({ field: label, value: val });
     });
 
-    // Style header row
     sheet.getRow(1).font = { bold: true };
-
     const excelBuffer = await workbook.xlsx.writeBuffer();
 
     // === Email Sending ===
@@ -96,7 +116,7 @@ exports.handler = async (event) => {
       }
     });
 
-    // Send thank you email to user
+    // Email to user
     await transporter.sendMail({
       from: `LifePro Admin <${adminEmail}>`,
       to: userEmail,
@@ -108,7 +128,7 @@ exports.handler = async (event) => {
       `
     });
 
-    // Send feedback attachments to admin
+    // Email to admin with attachments
     await transporter.sendMail({
       from: `${formData.name} <${userEmail}>`,
       to: adminEmail,
