@@ -1,10 +1,16 @@
-// netlify/functions/sendThankYou.js
-
 const nodemailer = require('nodemailer');
 const PDFDocument = require('pdfkit');
 const ExcelJS = require('exceljs');
 const fs = require('fs');
 const path = require('path');
+
+// Format keys into nice readable field names
+function formatKey(key) {
+  return key
+    .replace(/([A-Z])/g, ' $1')
+    .replace(/^./, (str) => str.toUpperCase())
+    .replace(/_/g, ' ');
+}
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -20,17 +26,18 @@ exports.handler = async (event) => {
   const excelFileName = `${userName}_${dateStr}_feedback.xlsx`;
 
   try {
-    // Create PDF Buffer with Layout
+    // === PDF Creation ===
     const pdfBuffer = await new Promise((resolve, reject) => {
-      const doc = new PDFDocument({ margin: 40 });
+      const doc = new PDFDocument({ margin: 50 });
       const buffers = [];
 
       doc.on('data', buffers.push.bind(buffers));
       doc.on('end', () => resolve(Buffer.concat(buffers)));
       doc.on('error', reject);
 
-      // Header bar
-      doc.rect(0, 0, doc.page.width, 60).fill('#f1c40f');
+      // Header
+      doc.rect(0, 0, doc.page.width, 70).fill('#f1c40f');
+      doc.fillColor('#000').fontSize(20).text('LifePro Feedback Summary', 70, 25);
 
       // Logo
       const logoPath = path.resolve(__dirname, 'logo.png');
@@ -38,46 +45,49 @@ exports.handler = async (event) => {
         doc.image(logoPath, 20, 15, { width: 40 });
       }
 
-      // Title
-      doc
-        .fillColor('#000')
-        .fontSize(18)
-        .text('LifePro Feedback Summary', 70, 25, { align: 'center', continued: false });
-
       doc.moveDown(2);
+      doc.fillColor('#000').fontSize(12);
 
-      // Form Fields in Boxed Layout
+      // Feedback table-style layout
       Object.entries(formData).forEach(([key, value]) => {
+        const label = formatKey(key);
         const val = typeof value === 'object' ? JSON.stringify(value) : value;
 
         doc
           .fillColor('#333')
-          .fontSize(12)
-          .rect(doc.x, doc.y, doc.page.width - 80, 30)
-          .stroke()
+          .font('Helvetica-Bold')
+          .text(`${label}: `, { continued: true })
+          .font('Helvetica')
           .fillColor('#000')
-          .text(`${key}: ${val}`, { lineBreak: true, continued: false });
+          .text(`${val}`);
 
-        doc.moveDown(1);
+        doc.moveDown(0.5);
       });
 
       doc.end();
     });
 
-    // Generate Excel buffer
+    // === Excel Creation ===
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet('Feedback');
+
     sheet.columns = [
-      { header: 'Field', key: 'field' },
-      { header: 'Value', key: 'value' },
+      { header: 'Field', key: 'field', width: 30 },
+      { header: 'Value', key: 'value', width: 50 },
     ];
+
     Object.entries(formData).forEach(([key, value]) => {
+      const label = formatKey(key);
       const val = typeof value === 'object' ? JSON.stringify(value) : value;
-      sheet.addRow({ field: key, value: val });
+      sheet.addRow({ field: label, value: val });
     });
+
+    // Style header row
+    sheet.getRow(1).font = { bold: true };
+
     const excelBuffer = await workbook.xlsx.writeBuffer();
 
-    // Setup transporter
+    // === Email Sending ===
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
@@ -86,12 +96,16 @@ exports.handler = async (event) => {
       }
     });
 
-    // Send Thank You email to user
+    // Send thank you email to user
     await transporter.sendMail({
       from: `LifePro Admin <${adminEmail}>`,
       to: userEmail,
       subject: 'Thank You for Your Feedback',
-      html: `<p>Dear ${formData.name},</p><p>Thank you for your valuable feedback!</p><p>Regards,<br/>LifePro Healthcare Team</p>`
+      html: `
+        <p>Dear ${formData.name},</p>
+        <p>Thank you for your valuable feedback! We're always working to improve your experience.</p>
+        <p>Best regards,<br/>LifePro Healthcare Team</p>
+      `
     });
 
     // Send feedback attachments to admin
@@ -99,7 +113,7 @@ exports.handler = async (event) => {
       from: `${formData.name} <${userEmail}>`,
       to: adminEmail,
       subject: 'New Feedback Submission Received',
-      text: 'A new feedback form was submitted by a user.',
+      html: `<p>A new feedback form has been submitted. Please find the attached PDF and Excel summary.</p>`,
       attachments: [
         {
           filename: pdfFileName,
