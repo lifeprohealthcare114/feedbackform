@@ -122,7 +122,6 @@ exports.handler = async (event) => {
         <div style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 20px; color: #333;">
           <div style="max-width: 600px; margin: auto; background-color: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
             <div style="text-align: center; margin-bottom: 20px;">
-              <img src=logo.png" alt="Company Logo" style="max-width: 150px;" />
             </div>
             <h2 style="color: #2c3e50;">Thank You for Your Feedback!</h2>
             <p>Hi ${displayName},</p>
