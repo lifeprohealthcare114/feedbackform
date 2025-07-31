@@ -4,7 +4,6 @@ const ExcelJS = require('exceljs');
 const fs = require('fs');
 const path = require('path');
 
-// Format keys into readable field names
 function formatKey(key) {
   return key
     .replace(/([A-Z])/g, ' $1')
@@ -20,6 +19,7 @@ exports.handler = async (event) => {
   const formData = JSON.parse(event.body);
   const userEmail = formData.email;
   const userName = formData.name?.replace(/\s+/g, '_') || 'User';
+  const displayName = formData.name || 'User';
   const dateStr = new Date().toISOString().split('T')[0];
   const adminEmail = 'lifeprohealthcare114@gmail.com';
   const pdfFileName = `${userName}_${dateStr}_feedback.pdf`;
@@ -35,11 +35,9 @@ exports.handler = async (event) => {
       doc.on('end', () => resolve(Buffer.concat(buffers)));
       doc.on('error', reject);
 
-      // Header background
       doc.rect(0, 0, doc.page.width, 60).fill('#f1c40f');
       doc.fillColor('#000').fontSize(20).font('Helvetica-Bold').text('Lifepro Healthcare Feedback Summary', 70, 20);
 
-      // Logo (optional)
       const logoPath = path.resolve(__dirname, 'logo.png');
       if (fs.existsSync(logoPath)) {
         doc.image(logoPath, 20, 15, { width: 40 });
@@ -60,7 +58,6 @@ exports.handler = async (event) => {
           .moveDown(0.3);
       };
 
-      // Sections
       section('Contact Information');
       ['name', 'email', 'phone', 'companyName', 'customerStatus', 'customerDuration', 'howHeard']
         .forEach(k => printField(formatKey(k), formData[k]));
@@ -116,33 +113,39 @@ exports.handler = async (event) => {
       }
     });
 
-    // Email to user
+    // ✉️ Thank You Email to User
     await transporter.sendMail({
       from: `LifePro Admin <${adminEmail}>`,
       to: userEmail,
-      subject: 'Thank You for Your Feedback',
+      subject: 'Thank You for Your Feedback!',
       html: `
-        <p>Dear ${formData.name},</p>
-        <p>Thank you for your valuable feedback! We're always working to improve your experience.</p>
-        <p>Best regards,<br/>LifePro Healthcare Team</p>
+        <div style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 20px; color: #333;">
+          <div style="max-width: 600px; margin: auto; background-color: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <div style="text-align: center; margin-bottom: 20px;">
+              <img src="https://yourdomain.com/assets/logo.png" alt="Company Logo" style="max-width: 150px;" />
+            </div>
+            <h2 style="color: #2c3e50;">Thank You for Your Feedback!</h2>
+            <p>Hi ${displayName},</p>
+            <p>Thank you for taking the time to share your feedback with us.</p>
+            <p>Your input is extremely valuable and helps us improve our services to better meet your needs. We truly appreciate your support and trust in LifePro Healthcare.</p>
+            <p>If you have any additional thoughts or suggestions, please don’t hesitate to reach out.</p>
+            <p style="margin-top: 30px;">Warm regards,<br />
+            <strong>The LifePro Healthcare Team</strong><br />
+            <a href="https://www.lifeprohealthcare.com/" style="color: #3498db;">https://www.lifeprohealthcare.com/</a></p>
+          </div>
+        </div>
       `
     });
 
-    // Email to admin with attachments
+    // 📎 Feedback to Admin
     await transporter.sendMail({
       from: `${formData.name} <${userEmail}>`,
       to: adminEmail,
       subject: 'New Feedback Submission Received',
       html: `<p>A new feedback form has been submitted. Please find the attached PDF and Excel summary.</p>`,
       attachments: [
-        {
-          filename: pdfFileName,
-          content: pdfBuffer
-        },
-        {
-          filename: excelFileName,
-          content: excelBuffer
-        }
+        { filename: pdfFileName, content: pdfBuffer },
+        { filename: excelFileName, content: excelBuffer }
       ]
     });
 
