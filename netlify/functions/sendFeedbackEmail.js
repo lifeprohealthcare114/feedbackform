@@ -1,7 +1,10 @@
 // netlify/functions/sendThankYou.js
+
 const nodemailer = require('nodemailer');
 const PDFDocument = require('pdfkit');
 const ExcelJS = require('exceljs');
+const fs = require('fs');
+const path = require('path');
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -12,29 +15,50 @@ exports.handler = async (event) => {
   const userEmail = formData.email;
   const userName = formData.name?.replace(/\s+/g, '_') || 'User';
   const dateStr = new Date().toISOString().split('T')[0];
-  const adminEmail = 'admin@example.com';
+  const adminEmail = 'lifeprohealthcare114@gmail.com';
   const pdfFileName = `${userName}_${dateStr}_feedback.pdf`;
   const excelFileName = `${userName}_${dateStr}_feedback.xlsx`;
 
   try {
-    // Generate PDF buffer
+    // Create PDF Buffer with Layout
     const pdfBuffer = await new Promise((resolve, reject) => {
-      const doc = new PDFDocument();
+      const doc = new PDFDocument({ margin: 40 });
       const buffers = [];
 
       doc.on('data', buffers.push.bind(buffers));
-      doc.on('end', () => {
-        resolve(Buffer.concat(buffers));
-      });
+      doc.on('end', () => resolve(Buffer.concat(buffers)));
       doc.on('error', reject);
 
-      doc.fontSize(16).text('LifePro Feedback Summary', { align: 'center' });
-      doc.moveDown();
+      // Header bar
+      doc.rect(0, 0, doc.page.width, 60).fill('#f1c40f');
 
+      // Logo
+      const logoPath = path.resolve(__dirname, 'logo.png');
+      if (fs.existsSync(logoPath)) {
+        doc.image(logoPath, 20, 15, { width: 40 });
+      }
+
+      // Title
+      doc
+        .fillColor('#000')
+        .fontSize(18)
+        .text('LifePro Feedback Summary', 70, 25, { align: 'center', continued: false });
+
+      doc.moveDown(2);
+
+      // Form Fields in Boxed Layout
       Object.entries(formData).forEach(([key, value]) => {
         const val = typeof value === 'object' ? JSON.stringify(value) : value;
-        doc.fontSize(12).text(`${key}: ${val}`);
-        doc.moveDown(0.5);
+
+        doc
+          .fillColor('#333')
+          .fontSize(12)
+          .rect(doc.x, doc.y, doc.page.width - 80, 30)
+          .stroke()
+          .fillColor('#000')
+          .text(`${key}: ${val}`, { lineBreak: true, continued: false });
+
+        doc.moveDown(1);
       });
 
       doc.end();
@@ -67,10 +91,10 @@ exports.handler = async (event) => {
       from: `LifePro Admin <${adminEmail}>`,
       to: userEmail,
       subject: 'Thank You for Your Feedback',
-      html: `<p>Dear ${formData.name},</p><p>Thank you for your valuable feedback!</p><p>Regards,<br/>Lifepro Healthcare Team</p>`
+      html: `<p>Dear ${formData.name},</p><p>Thank you for your valuable feedback!</p><p>Regards,<br/>LifePro Healthcare Team</p>`
     });
 
-    // Send feedback PDF and Excel to admin
+    // Send feedback attachments to admin
     await transporter.sendMail({
       from: `${formData.name} <${userEmail}>`,
       to: adminEmail,
