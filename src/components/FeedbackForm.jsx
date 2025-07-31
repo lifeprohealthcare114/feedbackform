@@ -131,7 +131,7 @@ const FeedbackForm = () => {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch('/.netlify/functions/sendThankYou', {
+      const response = await fetch('/.netlify/functions/sendFeedbackEmail', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
