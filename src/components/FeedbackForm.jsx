@@ -1,3 +1,4 @@
+// src/components/FeedbackForm.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
@@ -124,40 +125,22 @@ const FeedbackForm = () => {
     setCurrentStep((prev) => prev - 1);
   };
 
-  const encode = (data) => {
-    const formData = new URLSearchParams();
-    Object.keys(data).forEach(key => {
-      if (typeof data[key] === 'object') {
-        Object.keys(data[key]).forEach(subKey => {
-          formData.append(`${key}.${subKey}`, data[key][subKey]);
-        });
-      } else {
-        formData.append(key, data[key]);
-      }
-    });
-    return formData.toString();
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateStep(currentStep)) return;
-
     setIsSubmitting(true);
-    
-    try {
-      const formPayload = encode({
-        ...formData,
-        'form-name': 'feedback'
-      });
 
-      const response = await fetch('/', {
+    try {
+      const response = await fetch('/.netlify/functions/sendThankYou', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: formPayload
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
       });
 
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      
+
       setShowConfetti(true);
       setTimeout(() => navigate('/thank-you'), 2000);
     } catch (error) {
@@ -247,17 +230,7 @@ const FeedbackForm = () => {
         </div>
       )}
 
-      <form 
-        name="feedback"
-        method="POST"
-        data-netlify="true"
-        onSubmit={handleSubmit}
-        netlify-honeypot="bot-field"
-      >
-        <input type="hidden" name="form-name" value="feedback" />
-        <div hidden>
-          <input name="bot-field" onChange={handleChange} />
-        </div>
+      <form name="feedback" onSubmit={handleSubmit}>
         {renderStep()}
       </form>
 
