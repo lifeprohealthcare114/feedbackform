@@ -58,7 +58,7 @@ const FeedbackForm = () => {
       case 1:
         if (!formData.name.trim()) newErrors.name = 'Name is required.';
         if (!formData.email.trim()) newErrors.email = 'Email is required.';
-        else if (!/^\S+@\S+\.\S+$/.test(formData.email)) newErrors.email = 'Invalid email format.';
+        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = 'Invalid email format.';
         if (formData.phone && !isValidPhoneNumber(formData.phone)) {
           newErrors.phone = 'Please enter a valid phone number';
         }
@@ -80,7 +80,7 @@ const FeedbackForm = () => {
         if (formData.websiteEaseOfUse === 0) newErrors.websiteEaseOfUse = 'Please rate website ease of use.';
         break;
       case 5:
-        if (formData.contactForFollowUp === 'Yes' && (!formData.followUpEmail.trim() || !/^\S+@\S+\.\S+$/.test(formData.followUpEmail))) {
+        if (formData.contactForFollowUp === 'Yes' && (!formData.followUpEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.followUpEmail))) {
           newErrors.followUpEmail = 'Email is required for follow-up and must be valid.';
         }
         break;
@@ -131,6 +131,23 @@ const FeedbackForm = () => {
     setIsSubmitting(true);
 
     try {
+      // Submit form to Netlify Forms (invisible form submission)
+      const form = new FormData();
+      form.append('form-name', 'feedback');
+      Object.entries(formData).forEach(([key, value]) => {
+        if (typeof value === 'object') {
+          form.append(key, JSON.stringify(value));
+        } else {
+          form.append(key, value);
+        }
+      });
+
+      await fetch('/', {
+        method: 'POST',
+        body: form
+      });
+
+      // Submit to serverless function
       const response = await fetch('/.netlify/functions/sendFeedbackEmail', {
         method: 'POST',
         headers: {
@@ -229,6 +246,13 @@ const FeedbackForm = () => {
           </div>
         </div>
       )}
+
+      <form name="feedback" method="POST" data-netlify="true" hidden>
+        <input type="hidden" name="form-name" value="feedback" />
+        {Object.keys(formData).map((key) => (
+          <input key={key} type="hidden" name={key} value={typeof formData[key] === 'object' ? JSON.stringify(formData[key]) : formData[key]} />
+        ))}
+      </form>
 
       <form name="feedback" onSubmit={handleSubmit}>
         {renderStep()}

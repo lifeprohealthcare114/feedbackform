@@ -37,7 +37,7 @@ exports.handler = async (event) => {
 
       // Header background
       doc.rect(0, 0, doc.page.width, 60).fill('#f1c40f');
-      doc.fillColor('#000').fontSize(20).font('Helvetica-Bold').text('LifePro Feedback Summary', 70, 20);
+      doc.fillColor('#000').fontSize(20).font('Helvetica-Bold').text('Lifepro Healthcare Feedback Summary', 70, 20);
 
       // Logo (optional)
       const logoPath = path.resolve(__dirname, 'logo.png');
